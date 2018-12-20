@@ -7,18 +7,75 @@ namespace SokobanGame
     {
         static void Main(string[] args)
         {
-            //Choose Level
             bool playAgain = true;
             while (playAgain == true)
             {
-                var Level = File.ReadAllLines("SokobanLevel1.txt");
+                Console.WriteLine("Level Selection");
+                string levelSelection;
+                var Level = File.ReadAllLines($"LevelSelection.txt");
+                PrintLevel(Level);
+                switch (MenuSelection(Level))
+                {
+                    case "1":
+                        levelSelection = "1";
+                        break;
+                    case "2":
+                        levelSelection = "2";
+                        break;
+                    case "3":
+                        levelSelection = "3";
+                        break;
+                    case "4":
+                        levelSelection = "4";
+                        break;
+                    default:
+                        Console.WriteLine($"ERROR");
+                        levelSelection = "error";
+                        break;
+                }
+                Level = File.ReadAllLines($"SokobanLevel{levelSelection}.txt");
                 PrintLevel(Level);
                 GameLoop(Level);
                 Console.WriteLine("Would you like to start a new game?\n");
                 playAgain = GetYesNo();
             }
         }
-
+        private static string MenuSelection(string[] Level)
+        {
+            bool choiceMade = false;
+            while (choiceMade == false)
+            {
+                var indicatorPosition = FindIndicator(Level);
+                Point target = null;
+                Point boxTarget = null;
+                switch (Console.ReadKey().Key)
+                {
+                    case ConsoleKey.UpArrow:
+                    case ConsoleKey.W:
+                        target = new Point(indicatorPosition.X, indicatorPosition.Y - 1);
+                        break;
+                    case ConsoleKey.DownArrow:
+                    case ConsoleKey.S:
+                        target = new Point(indicatorPosition.X, indicatorPosition.Y + 1);
+                        break;
+                    case ConsoleKey.Escape:
+                        Environment.Exit(0);
+                        break;
+                    case ConsoleKey.Enter:
+                        // X 16
+                        return $"{Level[indicatorPosition.Y][indicatorPosition.X + 16]}";
+                    default:
+                        target = null;
+                        break;
+                }
+                if (target != null)
+                {
+                    MoveIndicator(Level, indicatorPosition, target, boxTarget);
+                }
+                PrintLevel(Level);
+            }
+            return "1";
+        }
         private static void GameLoop(string[] Level)
         {
             bool win = false;
@@ -57,7 +114,7 @@ namespace SokobanGame
                         break;
                     case ConsoleKey.Escape:
                         // Restarts game
-                        Level = File.ReadAllLines("SokobanLevel1.txt");
+                       // Level = File.ReadAllLines($"SokobanLevel{levelSelection}.txt");
                         target = null;
                         boxTarget = null;
                         break;
@@ -74,7 +131,18 @@ namespace SokobanGame
                 win = FindBoxes(Level);
             }
         }
-
+        private static void MoveIndicator(string[] Level, Point indicatorPosition, Point target, Point boxTarget)
+        {
+            char targetCharacter = Level[target.Y][target.X];
+            if (CanPlayerMove(targetCharacter, boxTarget, Level))
+            {
+                if (targetCharacter == ' ')
+                {
+                    Level[target.Y] = ReplaceTile(Level, target, ">");
+                    Level[indicatorPosition.Y] = ReplaceTile(Level, indicatorPosition, " ");
+                }
+            }
+        }
         private static void MovePlayer(string[] Level, Point playerPosition, Point target, Point boxTarget)
         {
             char targetCharacter = Level[target.Y][target.X];
@@ -124,7 +192,10 @@ namespace SokobanGame
                 }
             }
         }
+        /*private static bool CanIndicatorMove(char targetCharacter, string[] Level)
+        {
 
+        }*/
         private static bool CanPlayerMove(char targetCharacter, Point boxTarget, string[] Level)
         {
             if (targetCharacter == '$' || targetCharacter == '*')
@@ -166,6 +237,22 @@ namespace SokobanGame
             }
             Console.WriteLine("\nYou've won!\n");
             return true;
+        }
+        private static Point FindIndicator(string[] fileContent)
+        {
+            for (int y = 0; y < fileContent.Length; y++)
+            {
+                for (int x = 0; x < fileContent[y].Length; x++)
+                {
+                    Point point = new Point(x, y);
+                    var character = fileContent[y][x];
+                    if (character == '>')
+                    {
+                        return point;
+                    }
+                }
+            }
+            return null;
         }
         private static Point FindPlayer(string[] fileContent)
         {

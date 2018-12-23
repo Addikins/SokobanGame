@@ -5,39 +5,23 @@ namespace SokobanGame
 {
     class Program
     {
+        // Flavor text needs better placement, continues to get cleared early
+        // Need an option to restart level not only the option to exit to main menu
         static void Main(string[] args)
         {
             bool playAgain = true;
             while (playAgain == true)
             {
                 Console.WriteLine("Level Selection");
-                string levelSelection;
                 var Level = File.ReadAllLines($"LevelSelection.txt");
                 PrintLevel(Level);
-                switch (MenuSelection(Level))
-                {
-                    case "1":
-                        levelSelection = "1";
-                        break;
-                    case "2":
-                        levelSelection = "2";
-                        break;
-                    case "3":
-                        levelSelection = "3";
-                        break;
-                    case "4":
-                        levelSelection = "4";
-                        break;
-                    default:
-                        Console.WriteLine($"ERROR");
-                        levelSelection = "error";
-                        break;
-                }
+                string levelSelection = LevelSelection(Level);
+
                 Level = File.ReadAllLines($"SokobanLevel{levelSelection}.txt");
                 PrintLevel(Level);
                 GameLoop(Level);
-                Console.WriteLine("Would you like to start a new game?\n");
-                playAgain = GetYesNo();
+                Console.ReadKey();
+                playAgain = GetYesNo(Level);
             }
         }
         private static string MenuSelection(string[] Level)
@@ -47,7 +31,6 @@ namespace SokobanGame
             {
                 var indicatorPosition = FindIndicator(Level);
                 Point target = null;
-                Point boxTarget = null;
                 switch (Console.ReadKey().Key)
                 {
                     case ConsoleKey.UpArrow:
@@ -61,20 +44,21 @@ namespace SokobanGame
                     case ConsoleKey.Escape:
                         Environment.Exit(0);
                         break;
+                    case ConsoleKey.Spacebar:
                     case ConsoleKey.Enter:
-                        // X 16
-                        return $"{Level[indicatorPosition.Y][indicatorPosition.X + 16]}";
+                        string LevelLine = Level[indicatorPosition.Y];
+                        return $"{LevelLine}";
                     default:
                         target = null;
                         break;
                 }
                 if (target != null)
                 {
-                    MoveIndicator(Level, indicatorPosition, target, boxTarget);
+                    MoveIndicator(Level, indicatorPosition, target);
                 }
                 PrintLevel(Level);
             }
-            return "1";
+            return "Error";
         }
         private static void GameLoop(string[] Level)
         {
@@ -104,7 +88,6 @@ namespace SokobanGame
                         // Console.WriteLine("Down");
                         target = new Point(playerPosition.X, playerPosition.Y + 1);
                         boxTarget = new Point(playerPosition.X, playerPosition.Y + 2);
-
                         break;
                     case ConsoleKey.LeftArrow:
                     case ConsoleKey.A:
@@ -113,8 +96,16 @@ namespace SokobanGame
                         boxTarget = new Point(playerPosition.X - 2, playerPosition.Y);
                         break;
                     case ConsoleKey.Escape:
-                        // Restarts game
-                       // Level = File.ReadAllLines($"SokobanLevel{levelSelection}.txt");
+                        // Exits game
+                        Console.WriteLine("Leaving Game");
+                        target = null;
+                        boxTarget = null;
+                        return;
+                    case ConsoleKey.Delete:
+                    case ConsoleKey.Backspace:
+                        //Restarts level
+                        // Level = File.ReadAllLines($"SokobanLevel{levelSelection}.txt");
+                        Console.WriteLine("Restarting level");
                         target = null;
                         boxTarget = null;
                         break;
@@ -127,20 +118,25 @@ namespace SokobanGame
                 {
                     MovePlayer(Level, playerPosition, target, boxTarget);
                 }
+                /*  if (win)
+                  {
+                      flavorText = "\nYou've won!\n";
+                  }
+                  else
+                  {
+                      flavorText = "/nPush the boxes into the goals!\n";
+                  } */
                 PrintLevel(Level);
                 win = FindBoxes(Level);
             }
         }
-        private static void MoveIndicator(string[] Level, Point indicatorPosition, Point target, Point boxTarget)
+        private static void MoveIndicator(string[] Level, Point indicatorPosition, Point target)
         {
             char targetCharacter = Level[target.Y][target.X];
-            if (CanPlayerMove(targetCharacter, boxTarget, Level))
+            if (CanIndicatorMove(targetCharacter, Level))
             {
-                if (targetCharacter == ' ')
-                {
-                    Level[target.Y] = ReplaceTile(Level, target, ">");
-                    Level[indicatorPosition.Y] = ReplaceTile(Level, indicatorPosition, " ");
-                }
+                Level[target.Y] = ReplaceTile(Level, target, ">");
+                Level[indicatorPosition.Y] = ReplaceTile(Level, indicatorPosition, " ");
             }
         }
         private static void MovePlayer(string[] Level, Point playerPosition, Point target, Point boxTarget)
@@ -192,10 +188,14 @@ namespace SokobanGame
                 }
             }
         }
-        /*private static bool CanIndicatorMove(char targetCharacter, string[] Level)
+        private static bool CanIndicatorMove(char targetCharacter, string[] Level)
         {
-
-        }*/
+            if (targetCharacter != ' ')
+            {
+                return false;
+            }
+            return true;
+        }
         private static bool CanPlayerMove(char targetCharacter, Point boxTarget, string[] Level)
         {
             if (targetCharacter == '$' || targetCharacter == '*')
@@ -211,10 +211,11 @@ namespace SokobanGame
             return Level[target.Y].Remove(target.X, 1).Insert(target.X, tileCharacter);
         }
 
-        private static void PrintLevel(string[] fileContent)
+        private static void PrintLevel(string[] fileContent /*,string flavorText*/)
         {
             Console.Clear();
-            Console.WriteLine("Press Esc to restart\n");
+            Console.WriteLine("Press Esc to exit\n");
+            //  Console.WriteLine(flavorText);
             for (int i = 0; i < fileContent.Length; i++)
             {
                 Console.WriteLine(fileContent[i]);
@@ -270,30 +271,68 @@ namespace SokobanGame
             }
             return null;
         }
-        public static bool GetYesNo()
+        private static string LevelSelection(string[] Level)
         {
-            char answer = 'e';
+            string answer = MenuSelection(Level);
+            if (answer.Contains("1"))
+            {
+                return "1";
+            }
+            else if (answer.Contains("2"))
+            {
+                return "2";
+            }
+            else if (answer.Contains("3"))
+            {
+                return "3";
+            }
+            else if (answer.Contains("4"))
+            {
+                return "4";
+            }
+           /* switch (answer)
+            {
+                case "1":
+                    return "1";
+                case "2":
+                    return "2";
+                case "3":
+                    return "3";
+                case "4":
+                    return "4";
+                default:
+                    Console.WriteLine($"ERROR");
+                    answer = '0';
+                    break;
+            }*/
+            return "Error"; 
+        }
+        private static bool GetYesNo(string[] Level)
+        {
             while (true)
             {
-                String receivedResponse = Console.ReadLine();
-                if (string.Equals(receivedResponse, "yes", StringComparison.CurrentCultureIgnoreCase) || string.Equals(receivedResponse, "y", StringComparison.CurrentCultureIgnoreCase))
+                Level = File.ReadAllLines("YesNo.txt");
+                PrintLevel(Level);
+                Console.WriteLine("Would you like to start a new game?\n");
+                string answer = MenuSelection(Level);
+                if (answer.ToLower().Contains('y'))
                 {
-                    answer = 'y';
+                    return true;
                 }
-                else if (string.Equals(receivedResponse, "no", StringComparison.CurrentCultureIgnoreCase) || string.Equals(receivedResponse, "n", StringComparison.CurrentCultureIgnoreCase))
+                else if (answer.ToLower().Contains('n'))
                 {
-                    answer = 'n';
+                    return false;
                 }
-                switch (answer)
+               /* switch (answerChoice)
                 {
                     case 'y':
                         return true;
                     case 'n':
                         return false;
                     default:
-                        Console.WriteLine("I don't understand, please enter yes or no.");
+                        Console.WriteLine("ERROR");
                         break;
-                }
+                } */
             }
         }
     }

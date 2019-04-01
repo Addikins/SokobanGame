@@ -3,6 +3,17 @@ using System.IO;
 
 namespace SokobanGame
 {
+    public class LevelClass
+    {
+        public string Level { get; set; }
+
+    }
+    public class Movement
+    {
+        //can indicator/player move
+        //move methods
+
+    }
     class Program
     {
         // Flavor text needs better placement, continues to get cleared early
